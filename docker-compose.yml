@@ -1,3 +1,6 @@
+# Reference to update
+# https://github.com/Joao-Henrique/Docker_Medium_Tutorial/blob/master/docker-compose.yml
+
 version: '3.1'
 
 services:
@@ -6,9 +9,7 @@ services:
     restart: always
     ports:
       - 27017:27017
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
+    command: mongod --noauth
 
   mongo-express:
     image: mongo-express
@@ -16,6 +17,4 @@ services:
     ports:
       - 8081:8081
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/

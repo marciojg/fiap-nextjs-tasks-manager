@@ -5,9 +5,10 @@ import { DefaultResponseMsg } from '../types/DefaultResponseMsg';
 const jwtValidator = (handler : NextApiHandler) =>
   async (req : NextApiRequest, res : NextApiResponse<DefaultResponseMsg>) => {
 
-    const {MY_SECRET_KEY} = process.env;
+    const { MY_SECRET_KEY } = process.env;
+
     if(!MY_SECRET_KEY){
-      res.status(500).json({ error: 'ENV my secret key nao encontrada '});
+      res.status(500).json({ error: 'ENV MY_SECRET_KEY não encontrada '});
       return;
     }
 
@@ -17,6 +18,7 @@ const jwtValidator = (handler : NextApiHandler) =>
 
     if(req.method !== 'OPTIONS') {
       const authorization = req.headers['authorization'];
+
       if(!authorization) {
         return res.status(401).json({ error: 'Nenhum token de acesso foi informado' });
       }
@@ -38,8 +40,8 @@ const jwtValidator = (handler : NextApiHandler) =>
           req.query.userId = decoded._id;
         }
       } catch(e) {
-        console.log(e)
-        return res.status(500).json({ error: 'Ocorreu erro ao tratar otken JWS' });
+        console.log(e);
+        return res.status(500).json({ error: 'Ocorreu erro ao tratar o token JWS' });
       }
 
     }
