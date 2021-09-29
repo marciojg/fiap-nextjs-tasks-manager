@@ -1,0 +1,22 @@
+@import './config.scss';
+
+.container-home {
+  button {
+    margin-top: 30px;
+    width: 100%;
+    height: 46px;
+    background-color: $primary-color;
+    border: none;
+    color: white;
+    border-radius: 12px;
+    font-size: 16px;
+  }
+
+  @media screen and (min-width: 992px) {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+  }
+}
