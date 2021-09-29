@@ -1,0 +1,115 @@
+@import './config.scss';
+
+.container-login {
+  .logo {
+    width: 178.35px;
+    display: block;
+    margin: auto;
+    margin-bottom: 30px;
+  }
+
+  p {
+    text-align: center;
+    color: $error-color;
+    font-weight: bold;
+    max-width: 300px;
+  }
+
+  .disabled {
+    background-color: $medium-grey-color;
+  }
+
+  .input {
+    display: flex;
+    flex-direction: row;
+    padding: 10px;
+
+    img {
+      width: 20px;
+      margin-right: 10px;
+      margin-top: -12px;
+    }
+
+    input {
+      width: 224px;
+      font-size: 14px;
+      letter-spacing: 0.01em;
+      color: $primary-color;
+      border-radius: 0px;
+      border-width: 0 0 0.1em 0;
+      border-color: $medium-grey-color;
+      padding-bottom: 8px;
+
+      outline: none;
+
+      &:focus {
+        border-color: $primary-color;
+      }
+
+      &::placeholder {
+        color: $medium-grey-color;
+        opacity: 1;
+      }
+
+      &:-ms-input-placeholder {
+        color: $medium-grey-color
+      }
+
+      &::-ms-input-placeholder {
+        color: $medium-grey-color
+      }
+
+
+    }
+
+    .show-password {
+      margin-left: -20px;
+      cursor: pointer;
+    }
+  }
+
+  button {
+    margin-top: 30px;
+    width: 100%;
+    height: 46px;
+    background-color: $primary-color;
+    border: none;
+    color: white;
+    border-radius: 12px;
+    font-size: 16px;
+  }
+
+  @media screen and (min-width: 992px) {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+
+    .logo {
+      width: 520px;
+      margin: 0px;
+    }
+
+    p {
+      max-width: none;
+    }
+
+    form {
+      border-style: solid;
+      border-color: $primary-color;
+      border-width: 0.1em;
+      border-radius: 32px;
+      padding: 80px 40px;
+
+      .input {
+        img {
+          width: 20px;
+        }
+        .input {
+          width: 343px;
+        }
+      }
+    }
+  }
+}
