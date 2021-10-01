@@ -40,14 +40,15 @@
 		flex-direction: row;
 		text-align: center;
 		justify-content: center;
+	}
 
-		span {
-			margin-left: 30px;
-			color: $primary-color;
-			font-size: 15px;
-			text-decoration: underline;
-			cursor: pointer;
-		}
+	span {
+		margin-top: 12px;
+		margin-left: 30px;
+		color: $primary-color;
+		font-size: 15px;
+		text-decoration: underline;
+		cursor: pointer;
 	}
 
 	.modal-body {
@@ -65,7 +66,6 @@
 	.modal-footer {
 		border-top: none;
 	}
-
 
 	@media screen and (min-width:1024px) {
 
