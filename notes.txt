@@ -1,179 +1,1282 @@
------------------------------------------------------------- AULA 02 --
-Node.js > 12
-Mongo DB Community Server ou imagem Docker Mongo DB
-Mongo Compass
-VS Code
-Postman / Insominia
+---------- CONFIGS
 
-SETUP -
-	npx create-next-app --type gerenciador-tarefas-next
-	npm i mongoose md5
-	npm i --save-dev @types/md5
-	npm i jsonwebtoken
-	npm i --save-dev @types/jsonwebtoken
+https://ifonts.xyz/biennale-font.html
+https://css-tricks.com/snippets/css/a-guide-to-flexbox/
 
-START - npm run dev (Next / Vue)
+npm i react-bootstrap bootstrap@4.6.0 node-sass sass
+npm i axios
+npm i moment
 
------------------------------------------------ ENV
 
-.env.example
-DB_CONNECTION_STRING=mongodb://localhost:27017/gerenciadorTarefasFiapDB
-MY_SECRET_KEY=minhaSenhaSuperSeguraParaOToken
+--------- TYPE
 
-.env.local
-DB_CONNECTION_STRING=mongodb://localhost:27017/gerenciadorTarefasFiapDB
-MY_SECRET_KEY=minhaSenhaSuperSeguraParaOToken
+-- AccessTokenProps .ts
 
------------------------------------------------ TYPES
-
-Login.ts
-
-export type Login = {
-    login: string,
-    password : string
+export type AccessTokenProps = {
+    setAccessToken(e : string) : void
 }
 
-DefaultResponseMsg.ts (type)
+--------- NEXT.JS
 
-export type DefaultResponseMsg = {
-    error? : string,
-    msg? : string
+-- _app.tsx
+import "../styles/app.scss";
+import type { AppProps } from 'next/app'
+
+function MyApp({ Component, pageProps }: AppProps) {
+  return <Component {...pageProps} />
+}
+export default MyApp
+
+-- index.tsx
+
+import type { NextPage } from 'next'
+import { useEffect, useState } from 'react';
+import { Home } from '../containers/Home';
+import { Login} from '../containers/Login';
+
+const Index: NextPage = () => {
+
+  const [accessToken, setAccessToken] = useState('');
+
+  useEffect(() => {
+    if(typeof window !== "undefined"){
+      const token = localStorage.getItem('accessToken')
+      if(token){
+        setAccessToken(token);
+      }
+    }
+  })
+
+  return (
+    !accessToken ? <Login setAccessToken={setAccessToken} />
+        : <Home  setAccessToken={setAccessToken}/>
+  )
 }
 
-User.ts
+export default Index
 
-export type User = {
-    _id: String,
-    name : String,
-    email : String,
-    password : String
-}
+-- Login.tsx
+import type { NextPage } from 'next'
+import { useState } from 'react'
+import { executeRequest } from '../services/api';
+import { AccessTokenProps } from '../types/AccessTokenProps';
 
-LoginResponse .ts
+const Login: NextPage<AccessTokenProps> = ({
+  setAccessToken
+}) => {
 
-export type LoginResponse = {
-    token: string,
-    name: string,
-    email : string
-}
+  const [login, setLogin] = useState('teste');
+  const [password, setPassword] = useState('');
+  const [msgErro, setMsgErro] = useState('');
+  const [isLoading, setLoading] = useState(false);
 
-Task.ts
-
-export type Task = {
-    _id?: string,
-    name : string,
-    userId : string,
-    finishPrevisionDate : Date,
-    finishDate? : Date
-}
-
------------------------------------------------ APIS
-
---- login.ts
-
-import type {NextApiRequest, NextApiResponse} from 'next';
-import md5 from 'md5';
-import jwt from 'jsonwebtoken';
-import connectDB from '../../middlewares/connectDB';
-import {UserModel} from '../../models/UserModel';
-import {DefaultResponseMsg} from '../../types/DefaultResponseMsg';
-import { Login } from '../../types/Login';
-import { LoginResponse } from '../../types/LoginResponse';
-
- const handler = async (req : NextApiRequest, res : NextApiResponse<DefaultResponseMsg | LoginResponse>) => {
+  const doLogin = async (e : any) =>{
     try{
-        if(req.method !== 'POST'){
-            res.status(400).json({ error: 'Metodo solicitado nao existe '});
-            return;
+      setLoading(true);
+      e.preventDefault();
+
+      if(!login || !password){
+        setMsgErro('Parâmetros de entrada inválidos');
+          setLoading(false);
+        return;
+      }
+
+      const body = {
+        login,
+        password
+      }
+
+      const result = await executeRequest('login', 'POST', body);
+
+      setMsgErro('');
+      if(result && result.data){
+        localStorage.setItem('accessToken', result.data.token);
+        localStorage.setItem('userName', result.data.name);
+        localStorage.setItem('userEmail', result.data.email);
+        setAccessToken(result.data.token);
+      }else{
+        setMsgErro('Nao foi possivel processar login tente novamente!');
+      }
+    }catch(e : any){
+      console.log(e);
+      if(e?.response?.data?.error){
+        setMsgErro(e?.response?.data?.error);
+      }else{
+        setMsgErro('Ocorreu erro ao processar login tente novamente!');
+      }
+    }
+
+    setLoading(false);
+  }
+
+  return (
+    <div className="container-login">
+      <img src="/logo.svg" alt="Logo Fiap" className="logo"/>
+      <form>
+        {msgErro && <p>{msgErro}</p>}
+        <div className="input">
+          <img src="/mail.svg" alt="Logo Fiap"/>
+          <input type="text" placeholder="Informe seu email"
+            value={login} onChange={e => setLogin(e.target.value)} />
+        </div>
+        <div className="input">
+          <img src="/lock.svg" alt="Logo Fiap"/>
+          <input type="password" placeholder="Informe sua senha"
+            value={password} onChange={e => setPassword(e.target.value)}/>
+        </div>
+        <button className={isLoading ? "disabled" : ""} type="button" onClick={doLogin} disabled={isLoading}>{isLoading ? "...Carregando" : "Login"}</button>
+      </form>
+    </div>
+  )
+}
+
+export { Login }
+
+-- Home.tsx
+
+import type { NextPage } from 'next'
+import { useEffect, useState } from 'react';
+import { Modal } from 'react-bootstrap';
+import { Filter } from '../components/Filter';
+import { Footer } from '../components/Footer';
+import { Header } from '../components/Header';
+import { List } from '../components/List';
+import { executeRequest } from '../services/api';
+import { AccessTokenProps } from '../types/AccessTokenProps';
+import { Task } from '../types/Task';
+
+const Home: NextPage<AccessTokenProps> = ({ setAccessToken }) => {
+
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [periodoDe, setPeriodoDe] = useState('');
+  const [periodoAte, setPeriodoAte] = useState('');
+  const [status, setStatus] = useState(0);
+
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setLoading] = useState(false);
+  const [msgErro, setMsgErro] = useState('');
+  const [name, setName] = useState('');
+  const [finishPrevisionDate, setFinishPrevisionDate] = useState('');
+
+  const getFilteredList = async () => {
+    try{
+
+      let filtros = '?status='+status;
+
+      if(periodoDe){
+        filtros += '&finishPrevisionStart='+periodoDe
+      }
+
+      if(periodoAte){
+        filtros += '&finishPrevisionEnd='+periodoAte
+      }
+
+      const result = await executeRequest('task'+filtros, 'GET');
+      if(result && result.data){
+        setTasks(result.data);
+      }
+    }catch(e){
+      console.log(e);
+    }
+  }
+
+  const doSave = async (e : any) =>{
+    try{
+      setLoading(true);
+      e.preventDefault();
+
+      if(!name || !finishPrevisionDate){
+        setMsgErro('Favor preencher o nome e data de previsão');
+        setLoading(false);
+        return;
+      }
+
+      const body = {
+        name,
+        finishPrevisionDate
+      }
+
+      await executeRequest('task', 'POST', body);
+      await getFilteredList();
+      closeModal();
+    }catch(e : any){
+      console.log(e);
+      if(e?.response?.data?.error){
+        setMsgErro(e?.response?.data?.error);
+      }else{
+        setMsgErro('Ocorreu erro ao adicionar tarefa tente novamente!');
+      }
+    }
+
+    setLoading(false);
+  }
+
+  const closeModal = () => {
+    setName('');
+    setFinishPrevisionDate('');
+    setLoading(false);
+    setMsgErro('');
+    setShowModal(false);
+  }
+
+  useEffect(() => {
+    getFilteredList();
+  }, [periodoDe, periodoAte, status]);
+
+  const sair = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    setAccessToken('');
+  }
+
+  return (
+    <>
+      <Header sair={sair} setShowModal={setShowModal}/>
+      <Filter
+        periodoDe={periodoDe}
+        periodoAte={periodoAte}
+        status={status}
+        setPeriodoDe={setPeriodoDe}
+        setPeriodoAte={setPeriodoAte}
+        setStatus={setStatus}
+      />
+      <List tasks={tasks} getFilteredList={getFilteredList}/>
+      <Footer setShowModal={setShowModal}/>
+      <Modal show={showModal}
+        onHide={() => closeModal()}
+        className="container-modal">
+          <Modal.Body>
+              <p>Adicionar uma tarefa</p>
+              {msgErro && <p className="error">{msgErro}</p>}
+              <input type="text"
+                placeholder="Nome da tarefa"
+                value={name}
+                onChange={e => setName(e.target.value)}/>
+              <input type="text"
+                placeholder="Data de previsão de conclusão"
+                value={finishPrevisionDate}
+                onChange={e => setFinishPrevisionDate(e.target.value)}
+                onFocus={e => e.target.type = "date"}
+                onBlur={e => finishPrevisionDate ? e.target.type = "date" : e.target.type = "text" }/>
+          </Modal.Body>
+          <Modal.Footer>
+              <div className="button col-12">
+                  <button
+                    onClick={doSave}
+                    disabled={isLoading}
+                    >{isLoading ? "...Enviando dados" : "Salvar"}</button>
+                  <span onClick={closeModal}>Cancelar</span>
+              </div>
+          </Modal.Footer>
+      </Modal>
+    </>
+  )
+}
+
+export { Home }
+
+
+
+--------- CSS
+
+-- config.scss
+$primaryColor: #ED1164;
+$secondaryColor: #91A3AD;
+$lightGreyColor: #FFEBF2;
+$mediumGreyColor: #91A3AD;
+$darkGreyColor: #575757;
+// vermelho #D60B04 - laranja #ED421C - amarelo #EDB428
+$errorColor: #D60B04;
+
+-- app.scss
+
+@import "~bootstrap/scss/bootstrap";
+
+@font-face {
+    font-family: 'Biennale Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: url('../public/fonts/BiennaleRegular.otf') format('opentype');
+}
+
+html {
+    height: 100%;
+    font-family: 'Biennale Regular';
+}
+
+body {
+    height: 100%;
+    font-family: 'Biennale Regular';
+}
+
+#__next{
+    height: 100%;
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    -webkit-box-pack: center;
+    -webkit-box-align: center;
+    padding: 0px;
+}
+
+@import './config.scss';
+@import './login.scss';
+@import './header.scss';
+@import './filtros.scss';
+@import './list.scss';
+@import './item.scss';
+@import './footer.scss';
+@import './modal.scss';
+
+input, select {
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    color: $primaryColor;
+    min-width: 180px;
+    background-color: transparent;
+    font-family: 'Biennale Regular';
+
+    border-top-width: 0px;
+    border-left-width: 0px;
+    border-right-width: 0px;
+    border-bottom-width: 0.01em;
+    border-color: $mediumGreyColor;
+
+    outline: none;
+
+    cursor: pointer;
+
+    &:focus {
+        border-color: $primaryColor;
+    }
+
+    &::placeholder {
+        color: $mediumGreyColor;
+        opacity: 1;
+    }
+
+    &:-ms-input-placeholder {
+        color: $mediumGreyColor;
+    }
+
+    &::-ms-input-placeholder {
+        color: $mediumGreyColor;
+    }
+}
+
+@media screen and (min-width:1024px) {
+    input, select {
+        border-top-width: 1px;
+        border-left-width: 1px;
+        border-right-width: 1px;
+        border-bottom-width: 1px;
+        border-radius: 8px;
+        padding: 5px;
+        outline: none;
+    }
+}
+
+-- login.scss
+
+@import './config.scss';
+
+.container-login {
+    .logo {
+        width: 178.35px;
+        display: block;
+        margin: auto;
+        margin-bottom: 30px;
+    }
+
+    p {
+        text-align: center;
+        color: $errorColor;
+        font-weight: bold;
+        max-width: 300px;
+    }
+
+    .input {
+        display: flex;
+        flex-direction: row;
+        padding: 10px;
+
+        img{
+            width: 20px;
+            margin-right: 10px;
+            margin-top: -10px;
         }
 
-        const {MY_SECRET_KEY} = process.env;
-        if(!MY_SECRET_KEY){
-            res.status(500).json({ error: 'ENV my secret key nao encontrada '});
-            return;
+        input {
+            width: 224px;
+            font-size: 14px;
+            letter-spacing: 0.01em;
+            color: $primaryColor;
+            border-radius: 0px;
+            border-top-width: 0px;
+            border-left-width: 0px;
+            border-right-width: 0px;
+            border-bottom-width: 0.1em;
+            border-color: $mediumGreyColor;
+            padding-bottom: 8px;
+
+            outline: none;
+
+            &:focus {
+                border-color: $primaryColor;
+            }
+
+            &::placeholder {
+                color: $mediumGreyColor;
+                opacity: 1;
+            }
+
+            &:-ms-input-placeholder {
+                color: $mediumGreyColor;
+            }
+
+            &::-ms-input-placeholder{
+                color: $mediumGreyColor;
+            }
+        }
+    }
+
+    button {
+        width: 100%;
+        height: 56px;
+        background-color: $primaryColor;
+        border: none;
+        color: white;
+        border-radius: 12px;
+        font-size: 16px;
+        margin-top: 30px;
+    }
+
+    @media screen and (min-width:1024px) {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-around;
+
+        .logo{
+            width:520px;
+            margin: 0px;
         }
 
-        if(req.body){
-            const auth = req.body as Login;
-            if(auth.login && auth.password){
-                const usersFound = await UserModel.find({email : auth.login, password: md5(auth.password)});
-                if(usersFound && usersFound.length > 0){
-                    const user = usersFound[0];
-                    const token = jwt.sign({_id : user._id}, MY_SECRET_KEY);
-                    res.status(200).json({ token, name: user.name, email: user.email});
-                    return;
+        p {
+            max-width: none;
+        }
+
+        form {
+            border-style: solid;
+            border-color: $primaryColor;
+            border-width: 0.1em;
+            border-radius: 32px;
+            padding: 80px 40px;
+
+            .input{
+                img{
+                    width: 20px;
+                }
+
+                input{
+                    width: 343px;
+                }
+            }
+        }
+    }
+}
+
+-- header.scss
+
+@import './config.scss';
+
+.container-header{
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom-color: $lightGreyColor;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    padding-top: 24px;
+    padding-bottom: 24px;
+
+    .logo {
+        width: 92px;
+        margin-left: 24px;
+    }
+
+    button {
+        display: none;
+    }
+
+    .desktop {
+        display: none;
+    }
+
+    .mobile {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+
+        span {
+            color: $primaryColor;
+            margin-right: 10px;
+        }
+        img {
+            width: 30px;
+            margin-right: 16px;
+        }
+    }
+
+    @media screen and (min-width:1024px) {
+        .mobile {
+            display: none;
+        }
+
+        .logo {
+            width: 130px;
+            margin-left: 80px;
+        }
+
+        button {
+            display: block;
+            border : none;
+            background-color: $secondaryColor;
+            color: white;
+            border-radius: 12px;
+            font-size: 16px;
+            width: 175px;
+            height: 40px;
+            align-items: center;
+
+            span {
+                font-size: 24px;
+                letter-spacing: 2px;
+            }
+        }
+
+        .desktop {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            margin-right: 80px;
+
+            span {
+                font-size: 20px;
+                color: $primaryColor;
+                margin-right: 20px;
+            }
+            img {
+                cursor: pointer;
+            }
+        }
+    }
+}
+
+-- filter.scss
+
+@import './config.scss';
+
+.container-filtros{
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    width: 95%;
+    background-color: $lightGreyColor;
+    border-radius: 12px;
+    padding: 10px;
+
+    .title {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+
+        span {
+            font-size: 18px;
+            letter-spacing: 0.01em;
+            color: $primaryColor;
+            font-weight: bold;
+        }
+
+        img {
+            cursor: pointer;
+        }
+
+        .form {
+            display: none;
+        }
+    }
+
+    .filtrosMobile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 10px;
+
+        div {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding-bottom: 8px;
+
+            label {
+                color: $primaryColor;
+                font-size: 16px;
+                min-width: 110px;
+                margin-bottom: 0px;
+            }
+        }
+    }
+
+    @media screen and (min-width:1024px) {
+        padding: 20px;
+
+        .title {
+            img {
+                display: none;
+            }
+
+            .form {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+
+                label {
+                    color: $primaryColor;
+                    font-size: 16px;
+                    margin-right: 10px;
+                    margin-left: 10px;
+                    margin-bottom: 0px;
+                }
+
+                input, select {
+                    border-color: $primaryColor;
+                }
+
+                .line {
+                    border-color: $primaryColor;
+                    border-width: 1px;
+                    border-style: solid;
+                    height: 40px;
+                    width: 0px;
+                    margin-left: 15px;
                 }
             }
         }
 
-        res.status(400).json({ error: 'Usuario ou senha invalidos '});
-    }catch(e){
-        console.log('Ocorreu erro ao autenticar usuario: ', e);
-        res.status(500).json({ error: 'Ocorreu erro ao autenticar usuario, tente novamente '});
+        .filtrosMobile {
+            display: none;
+        }
     }
 }
 
-export default connectDB(handler);
+-- list.scss
 
---- user.ts
+@import './config.scss';
 
-import type {NextApiRequest, NextApiResponse} from 'next';
-import md5 from 'md5';
-import {DefaultResponseMsg} from '../../types/DefaultResponseMsg';
-import { User } from '../../types/User';
-import connectDB from '../../middlewares/connectDB';
-import {UserModel} from '../../models/UserModel';
+.container-listagem{
+    display: flex;
+    flex: 1;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 
-const handler = async(req : NextApiRequest, res : NextApiResponse<DefaultResponseMsg>) =>{
+    &.vazia {
+        justify-content: center;
+    }
+
+    img {
+        width: 280px;
+    }
+
+    p{
+        color: $primaryColor;
+        font-size: 14px;
+        display: block;
+        font-weight: bold;
+    }
+
+    @media screen and (min-width:1024px) {
+        img {
+            width: 500px;
+        }
+
+        p {
+            font-size: 20px;
+        }
+    }
+}
+
+-- item.scss
+
+@import './config.scss';
+
+.container-item{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    width: 95%;
+    background-color: $lightGreyColor;
+    border-radius: 12px;
+    padding: 10px;
+    margin-top: 10px;
+    height: 55px;
+
+    img {
+        width: 18px;
+        margin-right: 15px;
+    }
+
+    div{
+        p{
+            margin: 0px;
+            color: $darkGreyColor;
+            font-weight: bold;
+            font-size: 15px;
+
+            &.concluido {
+                text-decoration: line-through;
+            }
+        }
+
+        span {
+            color: $darkGreyColor;
+            font-weight: normal;
+            font-size: 13px;
+        }
+    }
+
+    @media screen and (min-width:1024px) {
+        height: 70px;
+        padding: 20px;
+
+        img {
+            width: 20px;
+        }
+
+        &.ativo {
+            cursor: pointer;
+
+            &:hover {
+                border-color: $primaryColor;
+                border-style: solid;
+                border-width: 1px;
+            }
+        }
+    }
+}
+
+-- footer.scss
+
+
+@import './config.scss';
+
+.container-footer{
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 10px;
+    border-top-width: 0px;
+
+    span {
+        display: none;
+    }
+
+    button {
+        display: flex;
+        flex-direction: row;
+        background-color: $lightGreyColor;
+        border-color: $primaryColor;
+        border-width: 1px;
+        border-style: solid;
+        border-radius: 12px;
+        width: 96%;
+        min-height: 40px;
+        padding: 10px;
+        padding-left: 15px;
+        cursor: pointer;
+        color: $primaryColor;
+        font-size: 16px;
+        align-items: center;
+
+        img{
+            margin-right: 15px;
+        }
+    }
+
+    @media screen and (min-width:1024px) {
+        height: 60px;
+        border-top-color: $lightGreyColor;
+        border-top-width: 2px;
+        border-right-width: 0px;
+        border-left-width: 0px;
+        border-bottom-width: 0px;
+        border-style: solid;
+        padding-bottom: 0px;
+
+        button {
+            display: none;
+        }
+
+        span {
+            display: block;
+            font-size: 14px;
+            color: $primaryColor;
+        }
+    }
+}
+
+
+-- modal.scss
+
+@import './config.scss';
+
+.container-modal{
+    margin-top: 150px;
+
+    button {
+        width: 40%;
+        height: 50px;
+        background-color: $primaryColor;
+        border: none;
+        color: white;
+        border-radius: 12px;
+        font-size: 15px;
+    }
+
+    p {
+        text-align: center;
+        color: $primaryColor;
+        font-size: 17px;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+
+    input {
+        border-width: 0.5px;
+        border-color: $mediumGreyColor;
+        border-radius: 8px;
+        padding: 10px;
+        height: 50px;
+        margin-top: 10px;
+        width: 90%;
+    }
+
+    .error{
+        color: $errorColor;
+    }
+
+    .button{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+
+        span {
+            margin-left: 30px;
+            color: $primaryColor;
+            font-size: 15px;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    }
+
+    .modal-body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0px;
+    }
+
+    .modal-content {
+        border-radius: 15px;
+    }
+
+    .modal-footer {
+        border-top: none;
+    }
+
+    @media screen and (min-width:1024px) {
+
+    }
+}
+
+--------- COMPONENTS
+
+-- Header.tsx
+
+import type { NextPage } from 'next'
+
+type HeaderProps = {
+    sair() : void,
+    setShowModal(b:boolean):void
+}
+
+const Header: NextPage<HeaderProps> = ({ sair, setShowModal }) => {
+
+  const fullName = localStorage.getItem('userName');
+  const userName = fullName?.split(' ')[0] || '';
+
+  return (
+    <div className="container-header">
+      <img src="/logo.svg" alt="Logo Fiap" className="logo"/>
+      <button onClick={() => setShowModal(true)}><span>+</span> Adicionar Tarefa</button>
+      <div className="mobile">
+        <span>Olá, {userName}</span>
+        <img src="/exit-mobile.svg" alt="Deslogar" onClick={sair}/>
+      </div>
+      <div className="desktop">
+        <span>Olá, {userName}</span>
+        <img src="/exit-desktop.svg" alt="Deslogar" onClick={sair}/>
+      </div>
+    </div>
+  )
+}
+
+export { Header }
+
+-- Filter.tsx
+
+import type { NextPage } from 'next'
+import { useState } from 'react'
+
+type FilterProps = {
+ periodoDe : string,
+ setPeriodoDe(s : string) : void,
+ periodoAte : string,
+ setPeriodoAte(s : string) : void,
+ status : number,
+ setStatus(n : number) : void,
+}
+
+const Filter: NextPage<FilterProps> = ({
+  periodoDe,
+  periodoAte,
+  status,
+  setPeriodoDe,
+  setPeriodoAte,
+  setStatus
+}) => {
+
+  const [showFilters, setShowFilter] = useState(false);
+
+  return (
+    <div className="container-filtros">
+      <div className="title">
+        <span>Tarefas</span>
+        <img src="/filtro.svg" alt="Filtrar tarefas" onClick={e => setShowFilter(!showFilters)} />
+        <div className="form">
+          <div>
+            <label>Data prevista de conclusão de:</label>
+            <input type="date" value={periodoDe} onChange={e => setPeriodoDe(e.target.value)} />
+          </div>
+          <div>
+            <label> até:</label>
+            <input type="date" value={periodoAte} onChange={e => setPeriodoAte(e.target.value)} />
+          </div>
+          <div className="line"/>
+          <div>
+            <label>Status:</label>
+            <select value={status} onChange={e => setStatus(parseInt(e.target.value))}>
+              <option value={0}>Todas</option>
+              <option value={1}>Ativas</option>
+              <option value={2}>Concluídas</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      {showFilters && <div className="filtrosMobile">
+        <div>
+          <label>Período de:</label>
+          <input type="date" value={periodoDe} onChange={e => setPeriodoDe(e.target.value)}/>
+        </div>
+        <div>
+          <label>Período até:</label>
+          <input type="date" value={periodoAte} onChange={e => setPeriodoAte(e.target.value)}/>
+        </div>
+        <div>
+          <label>Status:</label>
+          <select value={status} onChange={e => setStatus(parseInt(e.target.value))}>
+            <option value={0}>Todas</option>
+            <option value={1}>Ativas</option>
+            <option value={2}>Concluídas</option>
+          </select>
+        </div>
+      </div>}
+    </div>
+  )
+}
+
+export { Filter }
+
+-- List.tsx
+
+import moment from 'moment'
+import type { NextPage } from 'next'
+import { useState } from 'react'
+import { Modal } from 'react-bootstrap'
+import task from '../pages/api/task'
+import { executeRequest } from '../services/api'
+import { Task } from '../types/Task'
+import { Item } from './Item'
+
+type ListProps = {
+  tasks: Task[],
+  getFilteredList() : void
+}
+
+const List: NextPage<ListProps> = ({ tasks, getFilteredList }) => {
+
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setLoading] = useState(false);
+  const [msgErro, setMsgErro] = useState('');
+  const [_id, setId] = useState<string | undefined>('');
+  const [name, setName] = useState('');
+  const [finishPrevisionDate, setFinishPrevisionDate] = useState('');
+  const [finishDate, setFinishDate] = useState('');
+
+  const doUpdate = async (e : any) =>{
     try{
-        if(req.method !== 'POST'){
-            res.status(400).json({ error: 'Metodo solicitado nao existe '});
-            return;
-        }
+      setLoading(true);
+      e.preventDefault();
 
-        if(req.body){
-            const user = req.body as User;
-            if(!user.name || user.name.length < 3){
-                res.status(400).json({ error: 'Nome do usuario invalido'});
-                return;
-            }
+      if(!_id || !name || !finishPrevisionDate){
+        setMsgErro('Favor preencher id, nome e data de previsão');
+        setLoading(false);
+        return;
+      }
 
-            if(!user.email || !user.email.includes('@') || !user.email.includes('.')
-                || user.email.length < 4){
-                res.status(400).json({ error: 'Email do usuario invalido'});
-                return;
-            }
+      const body = {
+        name,
+        finishPrevisionDate,
+        finishDate
+      }
 
-            var strongRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})");
-            if(!strongRegex.test(user.password)){
-                res.status(400).json({ error: 'Senha do usuario invalida'});
-                return;
-            }
-
-            const existingUser = await UserModel.find({email : user.email});
-            if(existingUser && existingUser.length > 0){
-                res.status(400).json({ error: 'Ja existe usuario com o email informado'});
-                return;
-            }
-
-            const final = {
-                ...user,
-                password : md5(user.password)
-            }
-
-            await UserModel.create(final);
-            res.status(200).json({msg: 'Usuario adicionado com sucesso'});
-            return;
-        }
-
-        res.status(400).json({error: 'Parametros de entrada invalidos'});
-    }catch(e){
-        console.log('Ocorreu erro ao criar usuario: ', e);
-        res.status(500).json({ error: 'Ocorreu erro ao criar usuario, tente novamente '});
+      await executeRequest('task?id='+_id, 'PUT', body);
+      await getFilteredList();
+      closeModal();
+    }catch(e : any){
+      console.log(e);
+      if(e?.response?.data?.error){
+        setMsgErro(e?.response?.data?.error);
+      }else{
+        setMsgErro('Ocorreu erro ao alterar tarefa tente novamente!');
+      }
     }
+
+    setLoading(false);
+  }
+
+  const doDelete = async (e : any) =>{
+    try{
+      setLoading(true);
+      e.preventDefault();
+
+      if(!_id){
+        setMsgErro('Favor preencher id para deletar');
+        setLoading(false);
+        return;
+      }
+
+      await executeRequest('task?id='+_id, 'DELETE');
+      await getFilteredList();
+      closeModal();
+    }catch(e : any){
+      console.log(e);
+      if(e?.response?.data?.error){
+        setMsgErro(e?.response?.data?.error);
+      }else{
+        setMsgErro('Ocorreu erro ao deletar tarefa tente novamente!');
+      }
+    }
+
+    setLoading(false);
+  }
+
+  const closeModal = () => {
+    setName('');
+    setFinishPrevisionDate('');
+    setFinishDate('');
+    setId('');
+    setLoading(false);
+    setMsgErro('');
+    setShowModal(false);
+  }
+
+  const selectTaskToEdit = (t : Task) => {
+    setId(t._id);
+    setName(t.name);
+    setFinishPrevisionDate(moment(t.finishPrevisionDate).format('yyyy-MM-DD'));
+    setFinishDate(t.finishDate ? moment(t.finishDate).format('yyyy-MM-DD') : '');
+    setShowModal(true);
+    setMsgErro('');
+  }
+
+  return (
+    <>
+      <div className={"container-list" + (tasks && tasks.length === 0 ? " vazia" : "")}>
+
+        {
+          tasks && tasks.length > 0 ?
+            tasks.map(t => <Item task={t} key={t._id} selectTaskToEdit={selectTaskToEdit} />)
+            :
+            <>
+              <img src="/empty-list.svg" alt="Nenhuma tarefa encontrada" />
+              <p>Você ainda não possui tarefas cadastradas!</p>
+            </>
+        }
+      </div>
+      <Modal show={showModal}
+        onHide={() => closeModal()}
+        className="container-modal">
+          <Modal.Body>
+              <p>Alterar uma tarefa</p>
+              {msgErro && <p className="error">{msgErro}</p>}
+              <input type="text"
+                placeholder="Nome da tarefa"
+                value={name}
+                onChange={e => setName(e.target.value)}/>
+              <input type={finishPrevisionDate ? "date" :"text" }
+                placeholder="Data de previsão de conclusão"
+                value={finishPrevisionDate}
+                onChange={e => setFinishPrevisionDate(e.target.value)}
+                onFocus={e => e.target.type = "date"}
+                onBlur={e => finishPrevisionDate ? e.target.type = "date" : e.target.type = "text" }/>
+              <input type={finishDate ? "date" :"text" }
+                placeholder="Data de conclusão"
+                value={finishDate}
+                onChange={e => setFinishDate(e.target.value)}
+                onFocus={e => e.target.type = "date"}
+                onBlur={e => finishDate ? e.target.type = "date" : e.target.type = "text" }/>
+          </Modal.Body>
+          <Modal.Footer>
+              <div className="button col-12">
+                  <button
+                    onClick={doUpdate}
+                    disabled={isLoading}
+                    >{isLoading ? "...Enviando dados" : "Salvar alterações"}</button>
+                  <span onClick={doDelete}>Excluir Tarefa</span>
+              </div>
+          </Modal.Footer>
+      </Modal>
+    </>
+  )
 }
 
-export default connectDB(handler);
+export { List }
+
+-- Item.tsx
+
+import type { NextPage } from 'next'
+import moment from 'moment';
+import { Task } from '../types/Task'
+
+type ItemProps = {
+  task : Task,
+  selectTaskToEdit(t : Task) : void
+}
+
+const Item: NextPage<ItemProps> = ({ task, selectTaskToEdit}) => {
+
+  const getDateText = (finishDate : Date | undefined, finishPrevisionDate : Date) => {
+    if(finishDate){
+      return `Concluído em: ${moment(finishDate).format('DD/MM/yyyy')}`;
+    }
+    return `Previsão de conclusão em: ${moment(finishPrevisionDate).format('DD/MM/yyyy')}`;
+  }
+
+  return (
+    <div className={"container-item" + (task.finishDate ? "" : " ativo")}
+        onClick={() => (task.finishDate ? null : selectTaskToEdit(task))}>
+        <img src={task.finishDate ? "/finished.svg" : "/not-finished.svg"}
+            alt={task.finishDate ? "Tarefa concluída" : "Tarefa não concluída"}/>
+        <div>
+          <p className={task.finishDate ? "concluido" : ""}>{task.name}</p>
+          <span>{getDateText(task.finishDate, task.finishPrevisionDate)}</span>
+        </div>
+    </div>
+  )
+}
+
+export { Item }
+
+-- Footer.tsx
+
+import type { NextPage } from 'next'
+
+type FooterProps = {
+  setShowModal(b:boolean):void
+}
+
+const Footer: NextPage<FooterProps> = ({ setShowModal}) => {
+  return (
+    <div className="container-footer">
+        <button onClick={() => setShowModal(true)}><img src="/add.svg" alt="Adicionar tarefa"></img> Adicionar Tarefa</button>
+        <span>© Copyright {new Date().getFullYear()} Fiap. Todos os direitos reservados.</span>
+    </div>
+  )
+}
+
+export { Footer }
+
+--------- SERVICES
+
+-- api.ts
+
+import axios, {Method} from 'axios';
+
+export const executeRequest = (endpoint: string, method :Method, body? : any) =>{
+    const headers = { 'Content-Type' : 'application/json'} as any;
+
+    const accessToken = localStorage.getItem('accessToken');
+    if(accessToken){
+        headers['Authorization'] = 'Bearer ' + accessToken;
+    }
+
+    const URL = 'http://localhost:3000/api/' + endpoint;
+    console.log(`executando : ${URL}, metodo : ${method}, body : ${body}
+        , headers : ${headers}`);
+    return axios.request({
+        url : URL,
+        method : method,
+        data: body? body : '',
+        headers : headers,
+        timeout: 30000
+    });
+}
+
+--------- ASSETS (SVG/FONTE) PASTA PUBLIC
+
+-- logo.svg
+-- mail.svg
+-- lock.svg
+-- fonts/BiennaleRegular.otf
+-- exitMobile.svg
+-- exitDesktop.svg
+-- filtro.svg
+-- empty-list.svg
+-- not-finished.svg
+-- finished.svg
+-- add.svg
+
+------------ API
 
 -- task.ts
 
@@ -184,17 +1287,26 @@ import jwtValidator from '../../middlewares/jwtValidator';
 import { Task } from '../../types/Task';
 import { TaskModel } from '../../models/TaskModel';
 import { UserModel } from '../../models/UserModel';
+import { GetTasksQueryParams } from '../../types/GetTasksQueryParams';
+import moment from 'moment';
 
-const handler = async(req:NextApiRequest, res:NextApiResponse<DefaultResponseMsg>) =>{
+const handler = async(req:NextApiRequest, res:NextApiResponse<DefaultResponseMsg | Task[]>) =>{
     try{
+
+        const userId = req?.body?.userId ? req?.body?.userId : req?.query?.userId as string;
+        const failedValidation = await validateUser(userId);
+        if(failedValidation){
+            return res.status(400).json({ error: failedValidation});
+        }
+
         if(req.method === 'POST'){
-            return await saveTask(req, res);
+            return await saveTask(req, res, userId);
         }else if(req.method === 'GET'){
-            return;
+            return await getTasks(req, res, userId);
         }else if(req.method === 'PUT'){
-            return;
+            return await updateTask(req, res, userId);
         }else if(req.method === 'DELETE'){
-            return;
+            return await deleteTask(req, res, userId);
         }
 
         res.status(400).json({ error: 'Metodo solicitado nao existe '});
@@ -204,25 +1316,120 @@ const handler = async(req:NextApiRequest, res:NextApiResponse<DefaultResponseMsg
     }
 }
 
-const saveTask = async(req:NextApiRequest, res:NextApiResponse<DefaultResponseMsg>) =>{
+const validateTaskAndReturnValue = async (req:NextApiRequest, userId : string) => {
+    const id = req.query?.id as string;
+
+    if(!id || id.trim() ===''){
+        return null;
+    }
+
+    const taskFound = await TaskModel.findById(id);
+    if(!taskFound || taskFound.userId !== userId){
+        return null;
+    }
+
+    return taskFound;
+}
+
+const updateTask = async (req:NextApiRequest, res:NextApiResponse<DefaultResponseMsg | Task[]>, userId : string) =>{
+    const taskFound = await validateTaskAndReturnValue(req, userId);
+    if(!taskFound){
+        return res.status(400).json({ error: 'Tarefa nao encontrada'});
+    }
+
     if(req.body){
-        const userId = req.body.userId;
-        if(!userId){
-            return res.status(400).json({ error: 'Usuario nao informado'});
-        }
-
-        const userFound = await UserModel.findById(userId);
-        if(!userFound){
-            return res.status(400).json({ error: 'Usuario nao encontrado'});
-        }
-
         const task = req.body as Task;
 
+        if(task.name && task.name.trim() !== ''){
+            taskFound.name = task.name;
+        }
+
+        if(task.finishPrevisionDate) {
+            taskFound.finishPrevisionDate = task.finishPrevisionDate;
+        }
+
+        if(task.finishDate) {
+            taskFound.finishDate = task.finishDate;
+        }
+
+        await TaskModel.findByIdAndUpdate({ _id : taskFound._id}, taskFound);
+        return res.status(200).json({ msg: 'Tarefa atualizada com sucesso'});
+    }
+
+    return res.status(400).json({ error: 'Parametro de entrada invalidos'});
+}
+
+const deleteTask = async (req:NextApiRequest, res:NextApiResponse<DefaultResponseMsg | Task[]>, userId : string) =>{
+    const taskFound = await validateTaskAndReturnValue(req, userId);
+    if(!taskFound){
+        return res.status(400).json({ error: 'Tarefa nao encontrada'});
+    }
+
+    await TaskModel.findByIdAndDelete({ _id : taskFound._id});
+    return res.status(200).json({ msg: 'Tarefa deletada com sucesso'});
+}
+
+const getTasks = async (req:NextApiRequest, res:NextApiResponse<DefaultResponseMsg | Task[]>, userId : string) =>{
+
+    const params = req.query as GetTasksQueryParams;
+
+    const query = {
+        userId
+    } as any;
+
+    if(params?.finishPrevisionStart){
+        const inputDate = new Date(params?.finishPrevisionStart);
+        query.finishPrevisionDate = { $gte : inputDate}
+    }
+
+    if(params?.finishPrevisionEnd){
+        const lastDate = new Date(params?.finishPrevisionEnd);
+        if(!query.finishPrevisionDate){
+            query.finishPrevisionDate = {};
+        }
+        query.finishPrevisionDate.$lte = lastDate
+    }
+
+    if(params?.status){
+        const status = parseInt(params?.status);
+        switch(status){
+            case 1:
+                console.log('switch 1');
+                query.finishDate = null;
+                break;
+            case 2:
+                console.log('switch 2');
+                query.finishDate = { $ne : null};
+                break;
+            default: break;
+        }
+    }
+
+    console.log('query', query);
+    const result = await TaskModel.find(query) as Task[];
+    console.log('result', result);
+    return res.status(200).json(result);
+}
+
+const validateUser = async (userId : string) =>{
+    if(!userId){
+        return 'Usuario nao informado';
+    }
+
+    const userFound = await UserModel.findById(userId);
+    if(!userFound){
+        return 'Usuario nao encontrado';
+    }
+}
+
+const saveTask = async(req:NextApiRequest, res:NextApiResponse<DefaultResponseMsg>, userId : string) =>{
+    if(req.body){
+        const task = req.body as Task;
         if(!task.name || task.name.length < 2){
             return res.status(400).json({ error: 'Nome da tarefa invalida'});
         }
 
-        if(!task.finishPrevisionDate || new Date(task.finishPrevisionDate).getDate() < new Date().getDate()){
+        if(!task.finishPrevisionDate || moment(task.finishPrevisionDate).isBefore(moment())){
             return res.status(400).json({ error: 'Data de previsao invalida ou menor que hoje'});
         }
 
@@ -240,119 +1447,3 @@ const saveTask = async(req:NextApiRequest, res:NextApiResponse<DefaultResponseMs
 }
 
 export default connectDB(jwtValidator(handler));
-
------------------------------------------------ POSTMAN
-
-Login:
-{
-    "login": "admin@admin.com",
-    "password": "Admin@123"
-}
-
-
------------------------------------------------ MODELS
-
-UserModel.ts
-
-import mongoose, {Schema} from 'mongoose';
-
-const UserSchema = new Schema({
-    name : { type : String, required: [true, '* Campo obrigatorio!']},
-    email : { type : String, required: [true, '* Campo obrigatorio!']},
-    password : { type : String, required: [true, '* Campo obrigatorio!']},
-});
-
-export const UserModel = mongoose.models.users || mongoose.model('users', UserSchema);
-
-TaskModel.ts
-
-import mongoose, {Schema} from 'mongoose';
-
-const TaskSchema = new Schema({
-    name : {type: String, required: [true, '* Campo obrigatorio!']},
-    userId : {type: String, required: [true, '* Campo obrigatorio!']},
-    finishPrevisionDate : {type: Date, required: [true, '* Campo obrigatorio!']},
-    finishDate : {type: Date},
-});
-
-export const TaskModel = mongoose.models.tasks || mongoose.model('tasks', TaskSchema);
-
------------------------------------------------ MIDDLEWARES
-
---ConectDB.ts
-import type {NextApiRequest, NextApiResponse, NextApiHandler} from 'next';
-import mongoose from 'mongoose';
-
-const connectDB = (handler : NextApiHandler) =>
-    async (req : NextApiRequest, res : NextApiResponse) => {
-
-    // Valido se ja esta conectado, se estiver processa a API normalmente
-    console.log('MongoDD readyState', mongoose.connections[0].readyState);
-    if(mongoose.connections[0].readyState){
-        return handler(req, res);
-    }
-
-    const {DB_CONNECTION_STRING} = process.env;
-    if(!DB_CONNECTION_STRING){
-        return res.status(500).json({error: 'ENV database nao informada'});
-    }
-
-    await mongoose.connect(DB_CONNECTION_STRING);
-    mongoose.connection.on('connected', () => console.log('Conectado na database'));
-    mongoose.connection.on('error', err => console.log('Ocorreu erro ao conectar na database', err));
-
-
-    return handler(req, res);
-}
-
-export default connectDB;
-
--- jwtValidation.ts
-import type {NextApiRequest, NextApiResponse, NextApiHandler} from 'next';
-import {DefaultResponseMsg} from '../types/DefaultResponseMsg';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-
-const jwtValidator = (handler : NextApiHandler) =>
-    async (req : NextApiRequest, res : NextApiResponse<DefaultResponseMsg>) => {
-
-    const {MY_SECRET_KEY} = process.env;
-    if(!MY_SECRET_KEY){
-        return res.status(500).json({ error: 'ENV my secret key nao encontrada '});
-    }
-
-    if(!req || !req.headers){
-        return res.status(400).json({ error: 'Nao foi possivel validar o token de acesso '});
-    }
-
-    if(req.method !== 'OPTIONS'){
-        const authorization = req.headers['authorization'];
-        if(!authorization){
-            return res.status(401).json({ error: 'Nenhum token de acesso informado'});
-        }
-
-        const token = authorization.substr(7);
-        if(!token){
-            return res.status(401).json({ error: 'Nenhum token de acesso informado'});
-        }
-
-        try{
-            const decoded = await jwt.verify(token, MY_SECRET_KEY) as JwtPayload;
-            if(!decoded){
-                return res.status(401).json({ error: 'Nao foi possivel validar o token'});
-            }
-
-            if(req.body){
-                req.body.userId = decoded._id;
-            }else if(req.query){
-                req.query.userId = decoded._id;
-            }
-        }catch(e){
-            console.log(e)
-            return res.status(500).json({ error: 'Ocorreu erro ao tratar token JWT'});
-        }
-    }
-
-    return handler(req, res);
-}
-
-export default jwtValidator;
