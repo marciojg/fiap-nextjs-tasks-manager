@@ -1,6 +1,6 @@
 @import './config.scss';
 
-.container-login {
+.container-login, .container-signin {
   .logo {
     width: 178.35px;
     display: block;
@@ -75,6 +75,16 @@
     color: white;
     border-radius: 12px;
     font-size: 16px;
+  }
+
+  span {
+    margin-top: 30px;
+    cursor: pointer;
+    color: $primary-color;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
   }
 
   @media screen and (min-width: 992px) {

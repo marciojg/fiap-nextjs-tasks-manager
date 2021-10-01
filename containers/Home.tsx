@@ -7,10 +7,10 @@ import { Footer } from '../components/Footer';
 import { Header } from '../components/Header';
 import { List } from '../components/List';
 import { executeRequest } from '../services/api';
-import { AccessTokenProps } from '../types/AccessTokenProps';
 import { Task } from '../types/Task';
+import { TokenProps } from '../types/TokenProps';
 
-const Home: NextPage<AccessTokenProps> = ({ setAccessToken }) => {
+const Home: NextPage<TokenProps> = ({ setAccessToken }) => {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [periodoDe, setPeriodoDe] = useState('');

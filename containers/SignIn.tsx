@@ -1,42 +1,35 @@
 import type { NextPage } from 'next';
 import { useState } from 'react';
 import { executeRequest } from '../services/api';
-import { AccessTokenProps } from '../types/AccessTokenProps';
-import { LoginResponse } from '../types/LoginResponse';
+import { AccessProps } from '../types/AccessProps';
 
-const Login: NextPage<AccessTokenProps> = ({ setAccessToken, setgoToLogin }) => {
+const SignIn: NextPage<AccessProps> = ({ setgoToLogin }) => {
 
-  const [login, setLogin] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [msgError, setMsgError] = useState('');
   const [isLoading, setLoading] = useState(false);
 
-  const doLogin = async(e: any) => {
+  const doSignIn = async(e: any) => {
     try {
       setLoading(true);
 
       e.preventDefault();
 
-      if(!login || !password) {
+      if(!name || !email || !password) {
         setMsgError('Parâmetros de entrada inválidos');
         return;
       }
 
-      const result = await executeRequest('login', 'POST', { login, password });
+      const result = await executeRequest('user', 'POST', { name, email, password });
 
       setMsgError('');
       if(result && result.data) {
-        const data = result.data as LoginResponse;
-
         console.log(result);
-
-        localStorage.setItem('accessToken', data.token);
-        localStorage.setItem('userName', data.name);
-        localStorage.setItem('userEmail', data.email);
-
-        setAccessToken(result.data.token);
+        setgoToLogin(true);
       } else {
-        setMsgError('Não foi possível processar o login, tente novamente');
+        setMsgError('Não foi possível criar este usuário, tente novamente');
       }
     } catch (error: any) {
       console.log(error);
@@ -44,22 +37,31 @@ const Login: NextPage<AccessTokenProps> = ({ setAccessToken, setgoToLogin }) => 
       if(error?.response?.data?.error) {
         setMsgError(error?.response?.data?.error);
       } else {
-        setMsgError('Ocorreu um erro ao processar o login, tente novamente');
+        setMsgError('Ocorreu um erro ao processar o cadastro, tente novamente');
       }
     }
 
     setLoading(false);
+    // setgoToLogin(false);
   }
 
   return (
-    <div className="container-login">
+    <div className="container-signin">
       <img src="logo.svg" alt="Logo Fiap" className="logo"/>
       <form>
         {msgError && <p>{msgError}</p>}
+
+        <div className="input">
+          <img src="name.svg" alt="Nome"/>
+          <input type="text" placeholder="Nome"
+            value={name} onChange={e => setName(e.target.value)}
+          />
+        </div>
+
         <div className="input">
           <img src="mail.svg" alt="Email"/>
           <input type="text" placeholder="Email"
-            value={login} onChange={e => setLogin(e.target.value)}
+            value={email} onChange={e => setEmail(e.target.value)}
           />
         </div>
 
@@ -74,16 +76,17 @@ const Login: NextPage<AccessTokenProps> = ({ setAccessToken, setgoToLogin }) => 
         <button type="button"
           disabled={isLoading}
           className={isLoading ? 'disabled' : '' }
-          onClick={doLogin}
+          onClick={doSignIn}
         >
-          {isLoading ? 'Carregando' : 'Login' }
+          {isLoading ? 'Carregando' : 'Cadastrar' }
         </button>
-        <span onClick={ () => setgoToLogin(false) }>
-          Criar uma conta
+
+        <span onClick={ () => setgoToLogin(true) }>
+          Já tem uma conta? Entre
         </span>
       </form>
     </div>
   )
 }
 
-export { Login };
+export { SignIn };
