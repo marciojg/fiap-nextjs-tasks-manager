@@ -10,6 +10,7 @@ const Login: NextPage<AccessTokenProps> = ({ setAccessToken, setgoToLogin }) => 
   const [password, setPassword] = useState('');
   const [msgError, setMsgError] = useState('');
   const [isLoading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const doLogin = async(e: any) => {
     try {
@@ -51,6 +52,8 @@ const Login: NextPage<AccessTokenProps> = ({ setAccessToken, setgoToLogin }) => 
     setLoading(false);
   }
 
+  const clickEye = () => setShowPassword(!showPassword);
+
   return (
     <div className="container-login">
       <img src="logo.svg" alt="Logo Fiap" className="logo"/>
@@ -65,10 +68,10 @@ const Login: NextPage<AccessTokenProps> = ({ setAccessToken, setgoToLogin }) => 
 
         <div className="input">
           <img src="lock.svg" alt="Cadeado"/>
-          <input type="password" placeholder="Senha"
+          <input type={ showPassword ? "text" : "password"} placeholder="Senha"
             value={password} onChange={e => setPassword(e.target.value)}
           />
-          <img src="eye.svg" alt="Olho" className="show-password" />
+          <img src="eye.svg" alt="Olho" className="show-password" onClick={ () => clickEye() }/>
         </div>
 
         <button type="button"

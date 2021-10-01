@@ -10,6 +10,8 @@ const SignIn: NextPage<AccessProps> = ({ setgoToLogin }) => {
   const [password, setPassword] = useState('');
   const [msgError, setMsgError] = useState('');
   const [isLoading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
 
   const doSignIn = async(e: any) => {
     try {
@@ -42,8 +44,9 @@ const SignIn: NextPage<AccessProps> = ({ setgoToLogin }) => {
     }
 
     setLoading(false);
-    // setgoToLogin(false);
   }
+
+  const clickEye = () => setShowPassword(!showPassword);
 
   return (
     <div className="container-signin">
@@ -67,10 +70,10 @@ const SignIn: NextPage<AccessProps> = ({ setgoToLogin }) => {
 
         <div className="input">
           <img src="lock.svg" alt="Cadeado"/>
-          <input type="password" placeholder="Senha"
+          <input type={ showPassword ? "text" : "password"} placeholder="Senha"
             value={password} onChange={e => setPassword(e.target.value)}
           />
-          <img src="eye.svg" alt="Olho" className="show-password" />
+          <img src="eye.svg" alt="Olho" className="show-password" onClick={ () => clickEye() }/>
         </div>
 
         <button type="button"
