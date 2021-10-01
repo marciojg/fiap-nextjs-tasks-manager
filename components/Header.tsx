@@ -1,10 +1,11 @@
 import type { NextPage } from 'next';
 
 type HeaderProps = {
-  logout(): void
+  logout(): void,
+  setShowModal(b: boolean): void
 }
 
-const Header: NextPage<HeaderProps> = ({ logout }) => {
+const Header: NextPage<HeaderProps> = ({ logout, setShowModal }) => {
 
   const fullName = localStorage.getItem('userName');
   const userName = fullName?.split(' ')[0] || '';
@@ -13,7 +14,7 @@ const Header: NextPage<HeaderProps> = ({ logout }) => {
     <div className="container-header">
       <img src="logo.svg" alt="Logo Fiap" className="logo"/>
 
-      <button><span>+</span> Adicionar Tarefa</button>
+      <button onClick={() => setShowModal(true)}><span>+</span> Adicionar Tarefa</button>
 
       <div className="mobile">
         <span>Olá, {userName}</span>

@@ -6,6 +6,12 @@ export const executeRequest = (endpoint: string, method: Method, body?: any) => 
   // if(!process.env.FRONTEND_API_URL) {
   //   throw new Error('FRONTEND_API_URL not found');
   // }
+
+  const accessToken = localStorage.getItem('accessToken');
+  if(accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`
+  }
+
   const FRONTEND_API_URL = 'http://localhost:3000/api/';
 
   const URL = `${FRONTEND_API_URL}${endpoint}`;

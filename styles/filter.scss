@@ -1,97 +1,97 @@
 @import './config.scss';
 
 .container-filter {
-    margin-top: 16px;
-    display: flex;
-    flex-direction: column;
-    width: 95%;
-    background-color: $light-grey-color;
-    border-radius: 12px;
-    padding: 10px;
+	margin-top: 16px;
+	display: flex;
+	flex-direction: column;
+	width: 95%;
+	background-color: $light-grey-color;
+	border-radius: 12px;
+	padding: 10px;
 
-    .title {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
+	.title {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
 
-        span {
-            font-size: 18px;
-            letter-spacing: 0.01em;
-            color: $primary-color;
-            font-weight: bold;
-        }
+		span {
+			font-size: 18px;
+			letter-spacing: 0.01em;
+			color: $primary-color;
+			font-weight: bold;
+		}
 
-        img {
-            cursor: pointer;
-        }
+		img {
+			cursor: pointer;
+		}
 
-        .form {
-            display: none;
-        }
-    }
+		.form {
+			display: none;
+		}
+	}
 
-    .filtrosMobile {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        margin-top: 10px;
+	.filtrosMobile {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: space-between;
+		margin-top: 10px;
 
-        div {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            padding-bottom: 8px;
+		div {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			padding-bottom: 8px;
 
-            label {
-                color: $primary-color;
-                font-size: 16px;
-                min-width: 110px;
-                margin-bottom: 0px;
-            }
-        }
-    }
+			label {
+				color: $primary-color;
+				font-size: 16px;
+				min-width: 110px;
+				margin-bottom: 0px;
+			}
+		}
+	}
 
-    @media screen and (min-width:1024px) {
-        padding: 20px;
+	@media screen and (min-width:1024px) {
+		padding: 20px;
 
-        .title {
-            img {
-                display: none;
-            }
+		.title {
+			img {
+				display: none;
+			}
 
-            .form {
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                justify-content: center;
+			.form {
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				justify-content: center;
 
-                label {
-                    color: $primary-color;
-                    font-size: 16px;
-                    margin-right: 10px;
-                    margin-left: 10px;
-                    margin-bottom: 0px;
-                }
+				label {
+					color: $primary-color;
+					font-size: 16px;
+					margin-right: 10px;
+					margin-left: 10px;
+					margin-bottom: 0px;
+				}
 
-                input, select {
-                    border-color: $primary-color;
-                }
+				input, select {
+					border-color: $primary-color;
+				}
 
-                .line {
-                    border-color: $primary-color;
-                    border-width: 1px;
-                    border-style: solid;
-                    height: 40px;
-                    width: 0px;
-                    margin-left: 15px;
-                }
-            }
-        }
+				.line {
+					border-color: $primary-color;
+					border-width: 1px;
+					border-style: solid;
+					height: 40px;
+					width: 0px;
+					margin-left: 15px;
+				}
+			}
+		}
 
-        .filtrosMobile {
-            display: none;
-        }
-    }
+		.filtrosMobile {
+			display: none;
+		}
+	}
 }

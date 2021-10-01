@@ -1,3 +1,4 @@
+import moment from 'moment';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import connectDB from '../../middlewares/connectDB';
 import jwtValidator from '../../middlewares/jwtValidator';
@@ -147,7 +148,7 @@ const saveTask = async (req: NextApiRequest, res: NextApiResponse<DefaultRespons
     }
 
     if(!task.finishPrevisionDate
-      || dateBeginningOfDay(stringToDate(task.finishPrevisionDate)) < dateBeginningOfDay()) {
+      || moment(task.finishPrevisionDate).isBefore(moment())) {
       return res.status(400).json({ error: 'Data de previsão invalda ou menor que hoje' });
     }
 
@@ -163,18 +164,5 @@ const saveTask = async (req: NextApiRequest, res: NextApiResponse<DefaultRespons
 
   return res.status(400).json({ error: 'Parâmetros de entrada inválido' })
 }
-
-function stringToDate(date: string): Date {
-  const [year, month, day] = date.split('-');
-
-  return new Date(Number(year), Number(month) - 1, Number(day));
-}
-
-function dateBeginningOfDay(date?: Date): Date {
-  const iternalDate = date?? new Date;
-
-  return new Date(iternalDate.setHours(0, 0, 0, 0));
-}
-
 
 export default connectDB(jwtValidator(handler));

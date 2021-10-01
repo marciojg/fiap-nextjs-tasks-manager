@@ -42,7 +42,9 @@
     }
   }
 
-  @media screen and (min-width: 1024px) {
+  @media screen and (min-width:1024px) {
+    margin-top: 20px;
+
     .mobile {
       display: none;
     }
@@ -54,13 +56,13 @@
 
     button {
       display: block;
-      border: none;
-      width: 175px;
-      height: 40px;
+      border : none;
       background-color: $secondary-color;
       color: white;
       border-radius: 12px;
       font-size: 16px;
+      width: 175px;
+      height: 40px;
       align-items: center;
 
       span {
