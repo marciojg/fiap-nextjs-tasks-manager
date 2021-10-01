@@ -8,12 +8,14 @@ type FilterProps = {
   setPeriodoAte(s : string) : void,
   status : number,
   setStatus(n : number) : void,
+  msgErro: string
  }
 
 const Filter: NextPage<FilterProps> = ({
   periodoDe,
   periodoAte,
   status,
+  msgErro,
   setPeriodoDe,
   setPeriodoAte,
   setStatus
@@ -23,6 +25,7 @@ const Filter: NextPage<FilterProps> = ({
 
   return (
     <div className="container-filter">
+      {msgErro && <p className="error">{msgErro}</p>}
       <div className="title">
         <span>Tarefas</span>
         <img src="/filter.svg" alt="Filtrar tarefas" onClick={() => setShowFilter(!showFilters)} />

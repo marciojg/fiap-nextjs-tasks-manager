@@ -94,7 +94,7 @@ const deleteTask = async (req: NextApiRequest, res: NextApiResponse<DefaultRespo
 }
 
 const getTasks = async (req: NextApiRequest, res: NextApiResponse<DefaultResponseMsg | Task[]>, userId: string) => {
-  const params = req.query as unknown as GetTasksQueryParams;
+  const params = req.query as GetTasksQueryParams;
   const query = { userId } as any;
 
   if(params?.finishPrevisionDateStart) {

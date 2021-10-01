@@ -1,3 +1,4 @@
+import moment from 'moment';
 import type { NextPage } from 'next';
 import { useEffect, useState } from 'react';
 import { Modal } from 'react-bootstrap';
@@ -27,15 +28,23 @@ const Home: NextPage<AccessTokenProps> = ({ setAccessToken }) => {
 
       let filtros = `?status=${status}`;
 
-      if(periodoDe){
-        filtros += `&finishPrevisionStart=${periodoDe}`
+      if(periodoAte
+         && periodoDe
+         && moment(periodoAte).isBefore(moment(periodoDe))) {
+            return setMsgErro('Período até deve ser menor que Período de');
+         }
+
+      if(periodoDe) {
+        filtros += `&finishPrevisionDateStart=${periodoDe}`
       }
 
-      if(periodoAte){
-        filtros += `&finishPrevisionEnd=${periodoAte}`
+      if(periodoAte) {
+        filtros += `&finishPrevisionDateEnd=${periodoAte}`
       }
 
+      setMsgErro('');
       const result = await executeRequest(`tasks${filtros}`, 'GET');
+
       if(result && result.data){
         setTasks(result.data);
       }
@@ -101,6 +110,7 @@ const Home: NextPage<AccessTokenProps> = ({ setAccessToken }) => {
         periodoDe={periodoDe}
         periodoAte={periodoAte}
         status={status}
+        msgErro={msgErro}
         setPeriodoDe={setPeriodoDe}
         setPeriodoAte={setPeriodoAte}
         setStatus={setStatus}
