@@ -1,6 +1,7 @@
 import moment from 'moment';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import connectDB from '../../middlewares/connectDB';
+import cors from '../../middlewares/cors';
 import jwtValidator from '../../middlewares/jwtValidator';
 import { TaskModel } from '../../models/TaskModel';
 import { UserModel } from '../../models/UserModel';
@@ -165,4 +166,4 @@ const saveTask = async (req: NextApiRequest, res: NextApiResponse<DefaultRespons
   return res.status(400).json({ error: 'Parâmetros de entrada inválido' })
 }
 
-export default connectDB(jwtValidator(handler));
+export default cors(connectDB(jwtValidator(handler)));

@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import md5 from 'md5';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import connectDB from '../../middlewares/connectDB';
+import cors from '../../middlewares/cors';
 import { UserModel } from '../../models/UserModel';
 import { DefaultResponseMsg } from '../../types/DefaultResponseMsg';
 import { Login } from '../../types/Login';
@@ -43,4 +44,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<DefaultResponse
   }
 }
 
-export default connectDB(handler);
+export default cors(connectDB(handler));
