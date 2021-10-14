@@ -92,8 +92,8 @@ const List: NextPage<ListProps> = ({ tasks, getFilteredList }) => {
   const selectTaskToEdit = (t : Task) => {
     setId(t._id);
     setName(t.name);
-    setFinishPrevisionDate(moment(t.finishPrevisionDate).format('yyyy-MM-DD'));
-    setFinishDate(t.finishDate ? moment(t.finishDate).format('yyyy-MM-DD') : '');
+    setFinishPrevisionDate(moment.utc(t.finishPrevisionDate).format('yyyy-MM-DD'));
+    setFinishDate(t.finishDate ? moment.utc(t.finishDate).format('yyyy-MM-DD') : '');
     setShowModal(true);
     setMsgErro('');
   }

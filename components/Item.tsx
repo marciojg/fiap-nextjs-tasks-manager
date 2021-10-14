@@ -11,10 +11,10 @@ const Item: NextPage<ItemProps> = ({ task, selectTaskToEdit }) => {
 
   const getDateText = (finishDate : Date | undefined, finishPrevisionDate : Date) => {
     if(finishDate) {
-      return `Concluído em: ${moment(finishDate).format('DD/MM/yyyy')}`;
+      return `Concluído em: ${moment.utc(finishDate).format('DD/MM/YYYY')}`;
     }
 
-    return `Previsão de conclusão em: ${moment(finishPrevisionDate).format('DD/MM/yyyy')}`
+    return `Previsão de conclusão em: ${moment.utc(finishPrevisionDate).format('DD/MM/YYYY')}`
   }
 
   return (

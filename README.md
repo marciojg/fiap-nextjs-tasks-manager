@@ -1,16 +1,37 @@
+# Gerenciador de tarefas - NEXTJS
+
+## Etapas para subir o projeto
+
+1. Subir MongoDB
+
+```bash
+docker-compose up -d
+```
+
+2. Criar Variáveis de ambiente
+
+```bash
+cp .env.example .env.local
+```
+
+3. Iniciar serviço
+
+```bash
+npm run dev
+```
+
+4. Use e seja feliz ;)
+
+http://localhost:3000
+
 ---
 
-Subir o banco
+## Arquivos das aulas
 
-docker-compose up
-
-subir o projeto
-
-npm run dev
-
-http://dontpad.com/78AOJ-ux-engineer
-http://dontpad.com/78AOJ-ux-engineer-aula03
-http://dontpad.com/78AOJ-ux-engineer-aula03-front
+- https://www.figma.com/file/knytjAN1Sb4DYxtMLNv8xw/FIAP?node-id=1%3A78
+- http://dontpad.com/78AOJ-ux-engineer
+- http://dontpad.com/78AOJ-ux-engineer-aula03
+- http://dontpad.com/78AOJ-ux-engineer-aula03-front
 
 ---
 

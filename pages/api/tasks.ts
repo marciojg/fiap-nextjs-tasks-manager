@@ -99,17 +99,17 @@ const getTasks = async (req: NextApiRequest, res: NextApiResponse<DefaultRespons
   const query = { userId } as any;
 
   if(params?.finishPrevisionDateStart) {
-    const inputDate = new Date(params?.finishPrevisionDateStart)
+    const inputDate = moment.utc(params?.finishPrevisionDateStart)
     if(!query.finishPrevisionDate) {
       query.finishPrevisionDate = {};
     }
 
-    query.finishPrevisionDate.$lte = inputDate;
+    query.finishPrevisionDate.$gte = inputDate;
   }
 
   if(params?.finishPrevisionDateEnd) {
-    const inputDate = new Date(params?.finishPrevisionDateEnd)
-    query.finishPrevisionDate = { $lte: inputDate }
+    const inputDate = moment.utc(params?.finishPrevisionDateEnd)
+    query.finishPrevisionDate = { ...query.finishPrevisionDate, $lte: inputDate }
   }
 
   if(params?.status) {
@@ -149,9 +149,11 @@ const saveTask = async (req: NextApiRequest, res: NextApiResponse<DefaultRespons
     }
 
     if(!task.finishPrevisionDate
-      || moment(task.finishPrevisionDate).isBefore(moment())) {
+      || moment(task.finishPrevisionDate).isBefore(moment().startOf('date'))) {
       return res.status(400).json({ error: 'Data de previsão invalda ou menor que hoje' });
     }
+
+    console.log(task)
 
     const final = {
       ...task,
