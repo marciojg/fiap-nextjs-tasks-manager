@@ -15,9 +15,12 @@ export const executeRequest = (endpoint: string, method: Method, body?: any) => 
     headers['Authorization'] = `Bearer ${accessToken}`
   }
 
-  const API_URL = NEXT_PUBLIC_FRONTEND_API_URL || NEXT_PUBLIC_VERCEL_URL;
+  let API_URL = NEXT_PUBLIC_FRONTEND_API_URL;
 
-  console.log('API_URL', API_URL)
+  // forçando url em branco para tratar um bug em prd da url ficar: host/host/api/endpoint
+  if (NEXT_PUBLIC_VERCEL_URL) {
+    API_URL = '';
+  }
 
   const URL = `${API_URL}/api/${endpoint}`;
   console.log(`executando: ${URL}, metodo: ${method}, body: ${body}, headers: ${headers}`);
