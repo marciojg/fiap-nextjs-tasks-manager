@@ -1,6 +1,13 @@
 # Gerenciador de tarefas - NEXTJS
 
-## Etapas para subir o projeto
+## Projeto provisionado pela Vercel + MongoDBCloud
+
+Clique e use: https://fiap-nextjs-tasks-manager.vercel.app/
+
+- MongoDBCloud: https://cloud.mongodb.com/
+- Vercel: https://vercel.com/
+
+## Etapas para subir o projeto localmente
 
 1. Subir MongoDB
 
